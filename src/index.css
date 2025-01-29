@@ -1,0 +1,29 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  min-height: 100vh;
+  background-color: #f0f2f5;
+}
+
+#root {
+  height: 100%;
+}
+
+/* Style pour les espacements */
+.ant-space {
+  width: 100%;
+}
+
+/* Ajustements pour les composants Ant Design */
+.ant-input-number {
+  width: 100%;
+}
+
+.ant-layout {
+  min-height: 100vh;
+  background: #f0f2f5;
+}
