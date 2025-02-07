@@ -1,49 +1,45 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import {
-  INITIAL_EXCHANGE_RATE,
-  UPDATE_INTERVAL,
-  RATE_VARIATION_RANGE,
-  FIXED_RATE_VARIATION_THRESHOLD
+ INITIAL_EXCHANGE_RATE,
+ UPDATE_INTERVAL,
+ RATE_VARIATION_RANGE,
+ FIXED_RATE_VARIATION_THRESHOLD
 } from '../constants/config';
-import { generateRandomVariation, calculateVariationPercentage } from '../utils/currency';
+import { generateRandomVariation } from '../utils/currency';
 
 export const useExchangeRate = () => {
-  // État pour le taux de change actuel et le taux fixe optionnel
   const [currentRate, setCurrentRate] = useState(INITIAL_EXCHANGE_RATE);
   const [fixedRate, setFixedRate] = useState(null);
+  const [initialFixedRate, setInitialFixedRate] = useState(null);
 
-  // Fonction de mise à jour du taux avec vérification du taux fixe
-  const updateRate = useCallback(() => {
-    const variation = generateRandomVariation(RATE_VARIATION_RANGE);
-    
-    setCurrentRate(prevRate => {
-      const newRate = Number((prevRate + variation).toFixed(4));
+  const handleSetFixedRate = (rate) => {
+    setFixedRate(rate);
+    setInitialFixedRate(currentRate);
+  };
+
+  useEffect(() => {
+    const updateRate = () => {
+      const variation = generateRandomVariation(RATE_VARIATION_RANGE);
+      const newRate = Number((currentRate + variation).toFixed(4));
+      setCurrentRate(newRate);
       
-      // Si un taux fixe est défini, vérifie s'il doit être désactivé
-      if (fixedRate) {
-        const variation = calculateVariationPercentage(newRate, fixedRate);
-        if (variation > FIXED_RATE_VARIATION_THRESHOLD) {
+      if (fixedRate !== null && initialFixedRate !== null) {
+        const variationPercent = Math.abs((newRate - initialFixedRate) / initialFixedRate * 100);
+        if (variationPercent > FIXED_RATE_VARIATION_THRESHOLD) {
           setFixedRate(null);
+          setInitialFixedRate(null);
         }
       }
-      
-      return newRate;
-    });
-  }, [fixedRate]);
+    };
 
-  // Effet pour la mise à jour périodique du taux
-  useEffect(() => {
     const interval = setInterval(updateRate, UPDATE_INTERVAL);
     return () => clearInterval(interval);
-  }, [updateRate]);
-
-  // Le taux effectif est soit le taux fixe s'il existe, soit le taux actuel
-  const effectiveRate = fixedRate || currentRate;
+  }, [currentRate, fixedRate, initialFixedRate]);
 
   return {
     currentRate,
     fixedRate,
-    setFixedRate,
-    effectiveRate
+    setFixedRate: handleSetFixedRate,
+    effectiveRate: fixedRate ?? currentRate
   };
 };
