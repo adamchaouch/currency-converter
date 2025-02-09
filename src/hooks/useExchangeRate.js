@@ -23,8 +23,8 @@ export const useExchangeRate = () => {
       const newRate = Number((currentRate + variation).toFixed(4));
       setCurrentRate(newRate);
       
-      if (fixedRate !== null && initialFixedRate !== null) {
-        const variationPercent = Math.abs((newRate - initialFixedRate) / initialFixedRate * 100);
+      if (fixedRate !== null) {
+        const variationPercent = Math.abs((newRate - fixedRate) / newRate * 100);
         if (variationPercent > FIXED_RATE_VARIATION_THRESHOLD) {
           setFixedRate(null);
           setInitialFixedRate(null);

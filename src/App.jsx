@@ -1,5 +1,5 @@
 // App.jsx
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Layout, Card, Space } from 'antd';
 import { useExchangeRate } from './hooks/useExchangeRate';
 import ExchangeRateDisplay from './components/ExchangeRateDisplay';
@@ -12,45 +12,54 @@ const { Content } = Layout;
 function App() {
  const [amount, setAmount] = useState(1);
  const [isEUR, setIsEUR] = useState(true);
+
  const [history, setHistory] = useState([]);  
  const [lastConversion, setLastConversion] = useState(null);
 
  const { currentRate, fixedRate, setFixedRate, effectiveRate } = useExchangeRate();
 
- const convert = (value, isEuroInput) => {
-   if (value === null || value === undefined) return null;
-   return Number((isEuroInput ? value * effectiveRate : value / effectiveRate).toFixed(4));
- };
+ const convert = useCallback((value, isEuroInput) => {
+  if (value === null || value === undefined) return null;
+  return Number((isEuroInput ? value * effectiveRate : value / effectiveRate).toFixed(4));
+}, [effectiveRate]);
 
- const handleAmountChange = (value) => {
-   if (value === null) return;
-   setAmount(value);
-   
-   const convertedAmount = convert(value, isEUR);
-   const conversion = {
-     timestamp: new Date().toISOString(),
-     realRate: currentRate,
-     usedRate: effectiveRate,
-     inputAmount: value,
-     inputCurrency: isEUR ? 'EUR' : 'USD',
-     outputAmount: convertedAmount,
-     outputCurrency: isEUR ? 'USD' : 'EUR',
-   };
-   
-   setLastConversion(conversion);
-   setHistory(prev => [conversion, ...prev].slice(0, MAX_HISTORY_ITEMS));
- };
 
- const handleDirectionChange = (checked) => {
-   if (lastConversion) {
-     setIsEUR(checked);
-     const newAmount = lastConversion.outputAmount;
-     setAmount(newAmount);
-     handleAmountChange(newAmount);
-   } else {
-     setIsEUR(checked);
-   }
- };
+ const createConversion = useCallback((value, isEuroInput) => {
+  const convertedAmount = convert(value, isEuroInput);
+  return {
+    timestamp: new Date().toISOString(),
+    realRate: currentRate,
+    usedRate: effectiveRate,
+    inputAmount: value,
+    inputCurrency: isEuroInput ? 'EUR' : 'USD',
+    outputAmount: convertedAmount,
+    outputCurrency: isEuroInput ? 'USD' : 'EUR',
+  };
+}, [currentRate, effectiveRate, convert]);
+
+const updateHistory = useCallback((conversion) => {
+  setLastConversion(conversion);
+  setHistory(prev => [conversion, ...prev].slice(0, MAX_HISTORY_ITEMS));
+}, []);
+
+const handleAmountChange = useCallback((value) => {
+  if (value === null) return;
+  setAmount(value);
+  const conversion = createConversion(value, isEUR);
+  updateHistory(conversion);
+}, [isEUR, createConversion, updateHistory]);
+
+const handleDirectionChange = useCallback((checked) => {
+  if (lastConversion) {
+    const newAmount = lastConversion.outputAmount;
+    const conversion = createConversion(newAmount, checked);
+    setIsEUR(checked);
+    setAmount(newAmount);
+    updateHistory(conversion);
+  } else {
+    setIsEUR(checked);
+  }
+}, [lastConversion, createConversion, updateHistory]);
 
  return (
    <Layout>

@@ -1,4 +1,3 @@
-import React from 'react';
 import { Alert, Space } from 'antd';
 import { SyncOutlined } from '@ant-design/icons';
 
